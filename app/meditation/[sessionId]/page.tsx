@@ -250,7 +250,7 @@ export default function MeditationPage() {
         className={`relative min-h-screen flex flex-col items-center justify-center overflow-x-hidden transition-colors duration-1000 ${theme.bg}`}
       >
         {/* ---- NAVBAR ---- */}
-        <header className={`fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-6 py-4 backdrop-blur-md border-b transition-colors duration-1000 ${theme.headerBg}`}>
+        <header className={`fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 md:px-6 py-4 backdrop-blur-md border-b transition-colors duration-1000 ${theme.headerBg}`}>
           <div className={`text-xs font-sans tracking-widest uppercase opacity-70 ${theme.textMuted}`}>
             Meditation
           </div>

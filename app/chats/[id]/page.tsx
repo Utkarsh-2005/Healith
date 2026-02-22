@@ -11,6 +11,7 @@ import Link from "next/link";
 import CrisisResourcesBanner from "../../components/CrisisResourcesBanner";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
 import MeditationOfferModal from "../../components/MeditationOfferModal";
+import MobileSidebar from "../../components/MobileSidebar";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 type CrisisLevel = "none" | "concern" | "crisis";
@@ -329,12 +330,20 @@ export default function ChatSessionPage() {
   return (
     <div className="relative z-10 flex flex-col min-h-screen animate-in fade-in duration-1000">
       {/* Header */}
-      <header className={`fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-6 py-4 backdrop-blur-md border-b transition-colors duration-1000 ${theme.headerBg}`}>
-        <div className={`text-xs font-sans tracking-widest uppercase opacity-70 ${theme.textMuted}`}>
-          Session {sessionMeta?.sessionNumber ? String(sessionMeta.sessionNumber).padStart(2, "0") : "--"}
-          {isEnded && <span className="ml-2">(Ended)</span>}
+      <header className={`fixed top-0 left-0 right-0 z-30 flex items-center justify-between px-4 md:px-6 py-4 backdrop-blur-md border-b transition-colors duration-1000 ${theme.headerBg}`}>
+        <div className="flex items-center gap-3">
+          <MobileSidebar
+            sessions={sessions}
+            currentSessionId={sessionId}
+            isDarkMode={isDarkMode}
+            sessionsLoading={sessionsLoading}
+          />
+          <div className={`text-xs font-sans tracking-widest uppercase opacity-70 ${theme.textMuted}`}>
+            Session {sessionMeta?.sessionNumber ? String(sessionMeta.sessionNumber).padStart(2, "0") : "--"}
+            {isEnded && <span className="ml-2">(Ended)</span>}
+          </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           <UserButton
             appearance={{
               elements: {
@@ -369,7 +378,22 @@ export default function ChatSessionPage() {
           </button>
             <button
               onClick={isEnded ? () => router.push("/") : handleEndSession}
-              className={`text-xs font-sans hover:opacity-100 transition-all underline-offset-4 hover:underline ${theme.textMuted} hover:cursor-pointer`}
+              className={`p-2 rounded-full transition-all duration-500 hover:scale-110 sm:hidden ${isDarkMode ? "bg-[#1F3326] text-[#E8F3EE]" : "bg-[#EAF2EC] text-[#2F3E33]"} hover:cursor-pointer`}
+              title={isEnded ? "Back to Home" : "Close Session"}
+            >
+              {isEnded ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6L6 18M6 6l12 12" />
+                </svg>
+              )}
+            </button>
+            <button
+              onClick={isEnded ? () => router.push("/") : handleEndSession}
+              className={`text-xs font-sans hover:opacity-100 transition-all underline-offset-4 hover:underline hidden sm:block ${theme.textMuted} hover:cursor-pointer`}
             >
               {isEnded ? "Back to Home" : "Close Session"}
             </button>
@@ -379,7 +403,7 @@ export default function ChatSessionPage() {
       {/* Layout: Sidebar + Chat */}
       <div className="flex mt-16 h-[calc(100vh-4rem)]">
         {/* Sidebar */}
-        <aside className={`w-72 shrink-0 flex flex-col h-full border-r ${isDarkMode ? "border-[#1a251e]" : "border-[#E8EDE9]"} ${cx.panel}`}>
+        <aside className={`w-72 shrink-0 hidden md:flex flex-col h-full border-r ${isDarkMode ? "border-[#1a251e]" : "border-[#E8EDE9]"} ${cx.panel}`}>
           <div className="px-4 pt-4 pb-2">
             <Link
               href="/chats/new"
@@ -424,7 +448,7 @@ export default function ChatSessionPage() {
         </aside>
 
         {/* Chat Area */}
-        <main className="flex-1 overflow-y-auto px-6 py-8 pb-32">
+        <main className="flex-1 overflow-y-auto px-4 md:px-6 py-8 pb-32">
           <div className="max-w-2xl mx-auto">
             <div className="space-y-10">
               {messages.length === 0 && (
@@ -482,7 +506,7 @@ export default function ChatSessionPage() {
       </div>
 
       {/* Input Area */}
-      <footer className={`fixed bottom-0 left-72 right-0 px-4 pb-6 pt-10 bg-gradient-to-t to-transparent z-20 transition-colors duration-1000 ${theme.inputGradient}`}>
+      <footer className={`fixed bottom-0 left-0 md:left-72 right-0 px-4 pb-6 pt-10 bg-gradient-to-t to-transparent z-20 transition-colors duration-1000 ${theme.inputGradient}`}>
         <div className="max-w-2xl mx-auto relative">
           {isEnded ? (
             <div className={`relative flex items-center justify-center p-4 backdrop-blur-sm border rounded-3xl shadow-sm transition-colors duration-500 ${theme.inputBg}`}>
