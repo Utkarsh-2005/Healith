@@ -101,9 +101,9 @@ export default function Home() {
         
         {/* --- BACKGROUND AMBIENCE --- */}
         <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden transition-colors duration-1000">
-          <div className={`absolute top-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full filter blur-[80px] animate-float transition-all duration-1000 ${theme.blob1} ${theme.blobBlend}`} />
-          <div className={`absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] rounded-full filter blur-[80px] animate-float-delayed transition-all duration-1000 ${theme.blob2} ${theme.blobBlend}`} />
-          <div className={`absolute top-[40%] left-[30%] w-[400px] h-[400px] rounded-full filter blur-[60px] animate-float transition-all duration-1000 ${theme.blob3} ${theme.blobBlend}`} style={{ animationDuration: '30s' }} />
+          <div className={`absolute rounded-full filter blur-[80px] animate-float transition-all duration-1000 ${theme.blob1} ${theme.blobBlend} ${isDarkMode ? 'top-[-10%] left-[-10%] w-[500px] h-[500px]' : 'top-[-18%] left-[-16%] w-[420px] h-[420px]'}`} />
+          <div className={`absolute rounded-full filter blur-[80px] animate-float-delayed transition-all duration-1000 ${theme.blob2} ${theme.blobBlend} ${isDarkMode ? 'bottom-[-10%] right-[-10%] w-[600px] h-[600px]' : 'bottom-[-18%] right-[-14%] w-[500px] h-[500px]'}`} />
+          <div className={`absolute rounded-full filter blur-[60px] animate-float transition-all duration-1000 ${theme.blob3} ${theme.blobBlend} ${isDarkMode ? 'top-[40%] left-[30%] w-[400px] h-[400px]' : 'top-[65%] left-[70%] w-[350px] h-[350px]'}`} style={{ animationDuration: '30s' }} />
         </div>
 
         {/* --- LANDING PAGE --- */}

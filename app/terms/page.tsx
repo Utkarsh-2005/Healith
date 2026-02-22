@@ -139,8 +139,8 @@ export default function TermsPage() {
             </h2>
             <p className="text-[#5A6B5D] leading-relaxed">
               For questions about these Terms, please contact us at{" "}
-              <a href="mailto:hello@healith.app" className="text-[#4A7C59] hover:underline">
-                hello@healith.app
+              <a href="mailto:utkarshjha.4009@gmail.com" className="text-[#4A7C59] hover:underline">
+                utkarshjha.4009@gmail.com
               </a>
             </p>
           </section>

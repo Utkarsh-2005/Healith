@@ -6,8 +6,13 @@ import { UserButton } from "@clerk/nextjs";
 import { useTheme } from "../../context/ThemeContext";
 
 const INTRO_TEXT = "To begin, close your eyes. Sit in a comfortable place. Focus on the sound of my voice.";
+const OUTRO_TEXT = "Let these thoughts settle within you. Focus on your breathing, and stay here for as long as you need.";
 const BACKGROUND_MUSIC_URL =
   "https://cdn.pixabay.com/audio/2026/02/09/audio_4c3d3158a1.mp3";
+
+// Static audio URLs — replace with actual Cloudinary links
+const STATIC_INTRO_URL = process.env.NEXT_PUBLIC_INTRO_AUDIO_URL || "";
+const STATIC_OUTRO_URL = process.env.NEXT_PUBLIC_OUTRO_AUDIO_URL || "";
 
 // Random delay between affirmations: 4–5 seconds
 function randomDelay() {
@@ -110,8 +115,7 @@ export default function MeditationPage() {
     async function prefetch() {
       // 1. Fetch intro blob (use static Cloudinary URL if available)
       try {
-        const staticIntroUrl = process.env.NEXT_PUBLIC_INTRO_AUDIO_URL;
-        const introUrl = staticIntroUrl || await fetchTTS(INTRO_TEXT);
+        const introUrl = STATIC_INTRO_URL || await fetchTTS(INTRO_TEXT);
         if (cancelled) return;
         blobCache.current.set(-1, introUrl);
       } catch (err) {
@@ -131,6 +135,15 @@ export default function MeditationPage() {
         } catch (err) {
           console.error(`[Meditation] TTS prefetch failed for index ${i}:`, err);
         }
+      }
+
+      // 3. Fetch outro blob
+      try {
+        const outroUrl = STATIC_OUTRO_URL || await fetchTTS(OUTRO_TEXT);
+        if (cancelled) return;
+        blobCache.current.set(-2, outroUrl);
+      } catch (err) {
+        console.error("[Meditation] TTS prefetch failed for outro:", err);
       }
     }
 
@@ -173,7 +186,7 @@ export default function MeditationPage() {
     // Start background music (looped, low volume)
     const bg = new Audio(BACKGROUND_MUSIC_URL);
     bg.loop = true;
-    bg.volume = 0.18;
+    bg.volume = 0.2;
     bgMusicRef.current = bg;
     bg.play().catch(() => {});
 
@@ -208,11 +221,19 @@ export default function MeditationPage() {
       }
     }
 
-    // Fade out music
-    if (bgMusicRef.current) {
-      await fadeOutAudio(bgMusicRef.current, 2000);
+    // Wait 5 seconds after last affirmation, then play outro
+    await sleep(5000);
+
+    setCurrentIndex(affirmations.length);
+    setDisplayText(OUTRO_TEXT);
+    setTextKey((k) => k + 1);
+
+    const outroBlob = blobCache.current.get(-2) || await waitForBlob(-2);
+    if (outroBlob) {
+      try { await playVoice(outroBlob); } catch {}
     }
 
+    // Music keeps playing — transition to done (user ends when ready)
     setPhase("done");
   }
 
@@ -230,9 +251,11 @@ export default function MeditationPage() {
     };
   }, []);
 
-  function handleFinish() {
-    bgMusicRef.current?.pause();
+  async function handleFinish() {
     voiceRef.current?.pause();
+    if (bgMusicRef.current) {
+      await fadeOutAudio(bgMusicRef.current, 2000);
+    }
     router.push("/");
   }
 
@@ -404,7 +427,7 @@ export default function MeditationPage() {
               {/* Affirmation text with breathe animation */}
               <div
                 key={textKey}
-                className={`text-2xl md:text-3xl font-[family-name:var(--font-playfair)] leading-relaxed ${currentIndex === -1 ? "animate-text-breathe-long" : "animate-text-breathe"} ${theme.textMain}`}
+                className={`text-2xl md:text-3xl font-[family-name:var(--font-playfair)] leading-relaxed ${currentIndex === -1 || currentIndex === affirmations.length ? "animate-text-breathe-long" : "animate-text-breathe"} ${theme.textMain}`}
               >
                 {displayText}
               </div>
@@ -445,7 +468,7 @@ export default function MeditationPage() {
                 Take this feeling with you
               </h2>
               <p className={`text-sm max-w-sm mx-auto leading-relaxed ${theme.textMuted}`}>
-                Whenever you need a moment of calm, you can always come back.
+                Stay as long as you&apos;d like. When you&apos;re ready, the music will gently fade.
               </p>
               <button
                 onClick={handleFinish}

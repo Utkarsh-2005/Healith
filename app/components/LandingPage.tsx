@@ -431,7 +431,7 @@ export default function LandingPage({ onEnter, isEntering, isDarkMode, onToggleT
             <div className="flex flex-wrap justify-center gap-8">
               <a href="/privacy" className={`text-sm ${theme.textMuted} hover:${theme.textMain} transition-colors`}>Privacy Policy</a>
               <a href="/terms" className={`text-sm ${theme.textMuted} hover:${theme.textMain} transition-colors`}>Terms of Service</a>
-              <a href="mailto:hello@healith.app" className={`text-sm ${theme.textMuted} hover:${theme.textMain} transition-colors`}>Contact</a>
+              <a href="mailto:utkarshjha.4009@gmail.com" className={`text-sm ${theme.textMuted} hover:${theme.textMain} transition-colors`}>Contact</a>
             </div>
           </div>
           

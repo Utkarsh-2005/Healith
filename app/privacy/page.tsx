@@ -74,7 +74,7 @@ export default function PrivacyPage() {
               Your Rights
             </h2>
             <p className="text-[#5A6B5D] leading-relaxed">
-              You have the right to access, correct, or delete your personal data. You may also request an export of your conversation history. To exercise these rights, please contact us at hello@healith.app.
+              You have the right to access, correct, or delete your personal data. You may also request an export of your conversation history. To exercise these rights, please contact us at utkarshjha.4009@gmail.com.
             </p>
           </section>
 
@@ -93,8 +93,8 @@ export default function PrivacyPage() {
             </h2>
             <p className="text-[#5A6B5D] leading-relaxed">
               If you have questions about this Privacy Policy, please contact us at{" "}
-              <a href="mailto:hello@healith.app" className="text-[#4A7C59] hover:underline">
-                hello@healith.app
+              <a href="mailto:utkarshjha.4009@gmail.com" className="text-[#4A7C59] hover:underline">
+                utkarshjha.4009@gmail.com
               </a>
             </p>
           </section>
