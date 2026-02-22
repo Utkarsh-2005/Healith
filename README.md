@@ -1,8 +1,26 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This is a Next.js App Router project for the Healith MVP — AI Therapist with structured memory. It uses MongoDB for persistence and the Gemini API for responses.
 
 ## Getting Started
 
-First, run the development server:
+### Setup
+
+1. Copy the environment template and fill values:
+
+```bash
+cp .env.example .env
+```
+
+Required variables:
+- `MONGODB_URI` — your MongoDB connection string
+- `GEMINI_API_KEY` — Google Gemini API key (free tier supported)
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Run the development server:
 
 ```bash
 npm run dev
@@ -16,7 +34,18 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Open `app/page.tsx` for the minimal chat UI. Click “Start Session” to begin, type a message, and “End Session” to persist summary and structured memories.
+
+### Tech Notes
+
+- MongoDB via Mongoose is initialized in `lib/db.ts`.
+- Data models: `models/user.ts`, `models/session.ts`, `models/longTermMemory.ts`.
+- Prompt building and memory injection lives in `lib/prompt.ts`.
+- Server actions (Gemini calls, session tracking) are in `app/actions.ts`.
+
+### Non-goals
+
+No diagnosis, medical advice, or crisis handling; the assistant focuses on reflection and pattern awareness.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

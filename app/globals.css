@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Text selection color */
+::selection {
+  background-color: #9ECDB8;
+  color: #1A2E22;
+}
+
+::-moz-selection {
+  background-color: #9ECDB8;
+  color: #1A2E22;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -10,6 +21,48 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-playfair: var(--font-playfair);
+}
+
+/* Shine animation for premium text effect */
+@keyframes shine {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.animate-shine {
+  background: linear-gradient(
+    90deg,
+    currentColor 0%,
+    currentColor 40%,
+    #9ECDB8 50%,
+    currentColor 60%,
+    currentColor 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 30s ease-in-out infinite;
+}
+
+.dark .animate-shine {
+  background: linear-gradient(
+    90deg,
+    currentColor 0%,
+    currentColor 40%,
+    #FFFFFF 50%,
+    currentColor 60%,
+    currentColor 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,4 +76,67 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Accessibility: Focus visible styles for keyboard navigation */
+*:focus-visible {
+  outline: 2px solid #4A7C59;
+  outline-offset: 2px;
+}
+
+/* Remove focus outline from inputs/textareas that have custom focus styling */
+textarea:focus-visible,
+input:focus-visible {
+  outline: none;
+}
+
+/* Screen reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Custom scrollbar styles */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thumb-\[\#1a251e\]::-webkit-scrollbar-thumb {
+  background-color: #1a251e;
+  border-radius: 3px;
+}
+
+.scrollbar-thumb-\[\#D8E0DA\]::-webkit-scrollbar-thumb {
+  background-color: #D8E0DA;
+  border-radius: 3px;
+}
+
+.scrollbar-track-transparent::-webkit-scrollbar-track {
+  background: transparent;
 }
