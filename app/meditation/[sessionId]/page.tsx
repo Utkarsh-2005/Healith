@@ -4,19 +4,22 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { useTheme } from "../../context/ThemeContext";
+import { getCompanion } from "../../actions";
 
 const INTRO_TEXT = "To begin, close your eyes. Sit in a comfortable place. Focus on the sound of my voice.";
 const OUTRO_TEXT = "Let these thoughts settle within you. Focus on your breathing, and stay here for as long as you need.";
 const BACKGROUND_MUSIC_URL =
   "https://cdn.pixabay.com/audio/2026/02/09/audio_4c3d3158a1.mp3";
 
-// Static audio URLs — replace with actual Cloudinary links
-const STATIC_INTRO_URL = process.env.NEXT_PUBLIC_INTRO_AUDIO_URL || "";
-const STATIC_OUTRO_URL = process.env.NEXT_PUBLIC_OUTRO_AUDIO_URL || "";
+// Static audio URLs per companion
+const STATIC_INTRO_URL_F = process.env.NEXT_PUBLIC_INTRO_AUDIO_URL_F || "";
+const STATIC_OUTRO_URL_F = process.env.NEXT_PUBLIC_OUTRO_AUDIO_URL_F || "";
+const STATIC_INTRO_URL_M = process.env.NEXT_PUBLIC_INTRO_AUDIO_URL_M || "";
+const STATIC_OUTRO_URL_M = process.env.NEXT_PUBLIC_OUTRO_AUDIO_URL_M || "";
 
 // Random delay between affirmations: 4–5 seconds
 function randomDelay() {
-  return 4000 + Math.random() * 1000;
+  return 5000 + Math.random() * 1000;
 }
 
 // ---------- Wave animation CSS (injected once) ----------
@@ -64,6 +67,7 @@ export default function MeditationPage() {
 
   // Meditation data from sessionStorage
   const [affirmations, setAffirmations] = useState<string[]>([]);
+  const [companion, setCompanion] = useState<string | null>(null);
 
   // Playback state
   const [phase, setPhase] = useState<"loading" | "ready" | "playing" | "done">("loading");
@@ -93,6 +97,8 @@ export default function MeditationPage() {
     } catch {
       router.push("/");
     }
+    // Load companion preference
+    getCompanion().then(c => setCompanion(c)).catch(() => {});
   }, [sessionId, router]);
 
   // ---- Pre-fetch all TTS blobs once affirmations are loaded ----
@@ -100,12 +106,12 @@ export default function MeditationPage() {
     const res = await fetch("/api/tts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text, companion }),
     });
     if (!res.ok) throw new Error(`TTS fetch failed: ${res.status}`);
     const blob = await res.blob();
     return URL.createObjectURL(blob);
-  }, []);
+  }, [companion]);
 
   // ---- Pre-fetch TTS: intro first (makes page "ready"), then rest in background ----
   useEffect(() => {
@@ -115,7 +121,8 @@ export default function MeditationPage() {
     async function prefetch() {
       // 1. Fetch intro blob (use static Cloudinary URL if available)
       try {
-        const introUrl = STATIC_INTRO_URL || await fetchTTS(INTRO_TEXT);
+        const staticIntro = companion === "leon" ? STATIC_INTRO_URL_M : STATIC_INTRO_URL_F;
+        const introUrl = staticIntro || await fetchTTS(INTRO_TEXT);
         if (cancelled) return;
         blobCache.current.set(-1, introUrl);
       } catch (err) {
@@ -139,7 +146,8 @@ export default function MeditationPage() {
 
       // 3. Fetch outro blob
       try {
-        const outroUrl = STATIC_OUTRO_URL || await fetchTTS(OUTRO_TEXT);
+        const staticOutro = companion === "leon" ? STATIC_OUTRO_URL_M : STATIC_OUTRO_URL_F;
+        const outroUrl = staticOutro || await fetchTTS(OUTRO_TEXT);
         if (cancelled) return;
         blobCache.current.set(-2, outroUrl);
       } catch (err) {

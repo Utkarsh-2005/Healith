@@ -1,8 +1,12 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { ThemeProvider, useTheme } from "../context/ThemeContext";
 import { EncryptionProvider, useEncryption } from "../context/EncryptionContext";
 import PassphraseModal from "../components/PassphraseModal";
+import CompanionSelectModal from "../components/CompanionSelectModal";
+import { getCompanion, setCompanion as setCompanionAction } from "../actions";
+import type { CompanionStyle } from "@/models/user";
 
 // --- STYLES FOR ANIMATIONS ---
 const styleTag = `
@@ -23,11 +27,51 @@ const styleTag = `
 `;
 
 function EncryptionGate({ children }: { children: React.ReactNode }) {
-  const { isUnlocked, isLoading } = useEncryption();
-  
+  const { isUnlocked, isLoading, needsSetup } = useEncryption();
+  const [companion, setCompanion] = useState<CompanionStyle | null | undefined>(undefined); // undefined = loading
+  const [showCompanionModal, setShowCompanionModal] = useState(false);
+
+  // After unlock, check if user has a companion selected
+  const checkCompanion = useCallback(async () => {
+    try {
+      const c = await getCompanion();
+      setCompanion(c);
+      if (!c) setShowCompanionModal(true);
+    } catch {
+      setCompanion(null);
+      setShowCompanionModal(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isUnlocked) {
+      checkCompanion();
+    }
+  }, [isUnlocked, checkCompanion]);
+
   // Show passphrase modal if not unlocked
   if (!isUnlocked && !isLoading) {
-    return <PassphraseModal />;
+    return (
+      <PassphraseModal
+        onSuccess={() => {
+          // After PIN success, checkCompanion will run via the isUnlocked effect
+        }}
+      />
+    );
+  }
+
+  // Show companion selection modal if no companion set (first time or backward compat)
+  if (isUnlocked && showCompanionModal) {
+    return (
+      <CompanionSelectModal
+        isFirstTime={!companion}
+        onSelect={async (c: CompanionStyle) => {
+          await setCompanionAction(c);
+          setCompanion(c);
+          setShowCompanionModal(false);
+        }}
+      />
+    );
   }
   
   return <>{children}</>;

@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { startSession, sendMessage, endSession, deleteSession, listSessions, saveEncryptedMessages, saveEncryptedSummary, saveEncryptedMemory, getEncryptedMemory, getTrailingSessionContext, type SessionListItem } from "../../actions";
+import { startSession, sendMessage, endSession, deleteSession, listSessions, saveEncryptedMessages, saveEncryptedSummary, saveEncryptedMemory, getEncryptedMemory, getTrailingSessionContext, getCompanion, setCompanion as setCompanionAction, reopenSession, type SessionListItem } from "../../actions";
 import { useTheme } from "../../context/ThemeContext";
 import { useEncryption } from "../../context/EncryptionContext";
 import { encrypt, decrypt, encryptMessages } from "@/lib/encryption";
@@ -12,6 +12,8 @@ import CrisisResourcesBanner from "../../components/CrisisResourcesBanner";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
 import MeditationOfferModal from "../../components/MeditationOfferModal";
 import MobileSidebar from "../../components/MobileSidebar";
+import CompanionSelectModal from "../../components/CompanionSelectModal";
+import type { CompanionStyle } from "@/models/user";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 type CrisisLevel = "none" | "concern" | "crisis";
@@ -35,6 +37,9 @@ export default function NewChatPage() {
   const [showMeditationModal, setShowMeditationModal] = useState(false);
   const [isEndingSession, setIsEndingSession] = useState(false);
   const [meditationReady, setMeditationReady] = useState(false);
+  const [showCompanionSettings, setShowCompanionSettings] = useState(false);
+  const [currentCompanion, setCurrentCompanion] = useState<CompanionStyle | null>(null);
+  const [isSessionEnded, setIsSessionEnded] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -45,10 +50,11 @@ export default function NewChatPage() {
     
     async function init() {
       try {
-        const { sessionId: newId, sessionNumber: newNum, initialMessage } = await startSession();
+        const { sessionId: newId, sessionNumber: newNum, initialMessage, companion } = await startSession();
         if (mounted) {
           setSessionId(newId);
           setSessionNumber(newNum);
+          setCurrentCompanion(companion as CompanionStyle | null);
           if (initialMessage) {
             setMessages([{ role: "assistant", content: initialMessage }]);
           }
@@ -135,7 +141,7 @@ export default function NewChatPage() {
   }, [sessionId]);
 
   async function handleSend() {
-    if (!sessionId || !input.trim() || isThinking || !encryptionKey) return;
+    if (!sessionId || !input.trim() || isThinking || !encryptionKey || isSessionEnded) return;
 
     const userMsg = input.trim();
     setInput("");
@@ -219,7 +225,7 @@ export default function NewChatPage() {
     performEndSession();
   }
 
-  // Agent-initiated close: end session silently, show inline meditation card if available
+  // Agent-initiated close: end session, show ended UI with optional meditation
   async function handleAgentEndSession(msgs: ChatMessage[]) {
     if (!sessionId || !encryptionKey) return;
     setIsEndingSession(true);
@@ -258,9 +264,10 @@ export default function NewChatPage() {
         const withOffer = [...msgs, offerMsg];
         const encrypted = await encryptMessages(withOffer, encryptionKey);
         await saveEncryptedMessages({ sessionId, encryptedMessages: encrypted });
-      } else {
-        router.push("/");
       }
+
+      // Mark session as ended — shows ended UI footer
+      setIsSessionEnded(true);
     } catch (e) {
       console.error("Failed to end session (agent)", e);
     } finally {
@@ -354,7 +361,8 @@ export default function NewChatPage() {
             onNewSession={handleNewSession}
           />
           <div className={`text-xs font-sans tracking-widest uppercase opacity-70 ${theme.textMuted}`}>
-            Session {sessionNumber ? String(sessionNumber).padStart(2, "0") : "--"}
+            Session {sessionNumber ? String(sessionNumber).padStart(2, "0") : "--"} - {currentCompanion && ` ${currentCompanion === "lua" ? "Lua" : "Leon"}`}
+            {isSessionEnded && <span className="ml-2">(Ended)</span>}
           </div>
         </div>
         <div className="flex items-center gap-2 md:gap-4">
@@ -389,6 +397,16 @@ export default function NewChatPage() {
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
             )}
+          </button>
+          <button
+            onClick={() => setShowCompanionSettings(true)}
+            className={`p-2 rounded-full transition-all duration-500 hover:scale-110 ${isDarkMode ? "bg-[#1F3326] text-[#E8F3EE]" : "bg-[#EAF2EC] text-[#2F3E33]"} hover:cursor-pointer`}
+            title="Companion Settings"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
           </button>
           <button
             onClick={handleEndSession}
@@ -528,28 +546,46 @@ export default function NewChatPage() {
       {/* Input Area */}
       <footer className={`fixed bottom-0 left-0 md:left-72 right-0 px-4 pb-6 pt-10 bg-gradient-to-t to-transparent z-20 transition-colors duration-1000 ${theme.inputGradient}`}>
         <div className="max-w-2xl mx-auto relative">
-          <div className={`relative flex items-end gap-2 p-2 backdrop-blur-sm border rounded-3xl shadow-sm focus-within:ring-1 focus-within:ring-[#8CA394] transition-colors duration-500 ${theme.inputBg}`}>
-            <textarea
-              ref={inputRef}
-              className={`w-full max-h-32 bg-transparent px-4 py-3 text-base focus:outline-none resize-none font-sans ${theme.inputText}`}
-              placeholder="Write your thoughts..."
-              rows={1}
-              value={input}
-              onChange={handleInputResize}
-              onKeyDown={handleKeyDown}
-              disabled={isThinking}
-            />
-            <button
-              onClick={handleSend}
-              disabled={!input.trim() || isThinking}
-              className={`mb-1 rounded-full p-2 shadow-sm transition-all transform hover:rotate-[-10deg] disabled:opacity-50 disabled:cursor-not-allowed ${theme.button}`}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="19" x2="12" y2="5"></line>
-                <polyline points="5 12 12 5 19 12"></polyline>
-              </svg>
-            </button>
-          </div>
+          {isSessionEnded ? (
+            <div className={`relative flex flex-col items-center gap-3 p-4 backdrop-blur-sm border rounded-3xl shadow-sm transition-colors duration-500 ${theme.inputBg}`}>
+              <div className="text-sm opacity-80">This session has ended</div>
+              <button
+                onClick={async () => {
+                  if (!sessionId) return;
+                  await reopenSession(sessionId);
+                  setIsSessionEnded(false);
+                  setMeditationReady(false);
+                  inputRef.current?.focus();
+                }}
+                className={`text-sm tracking-wide transition-colors duration-300 ${theme.textMuted} hover:opacity-70 hover:cursor-pointer`}
+              >
+                I want to continue this session
+              </button>
+            </div>
+          ) : (
+            <div className={`relative flex items-end gap-2 p-2 backdrop-blur-sm border rounded-3xl shadow-sm focus-within:ring-1 focus-within:ring-[#8CA394] transition-colors duration-500 ${theme.inputBg}`}>
+              <textarea
+                ref={inputRef}
+                className={`w-full max-h-32 bg-transparent px-4 py-3 text-base focus:outline-none resize-none font-sans ${theme.inputText}`}
+                placeholder="Write your thoughts..."
+                rows={1}
+                value={input}
+                onChange={handleInputResize}
+                onKeyDown={handleKeyDown}
+                disabled={isThinking}
+              />
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || isThinking}
+                className={`mb-1 rounded-full p-2 shadow-sm transition-all transform hover:rotate-[-10deg] disabled:opacity-50 disabled:cursor-not-allowed ${theme.button}`}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="19" x2="12" y2="5"></line>
+                  <polyline points="5 12 12 5 19 12"></polyline>
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       </footer>
 
@@ -569,6 +605,19 @@ export default function NewChatPage() {
           isProcessing={isEndingSession}
           onAccept={() => router.push(`/meditation/${sessionId}`)}
           onDecline={() => router.push("/")}
+        />
+      )}
+
+      {/* Companion Settings Modal */}
+      {showCompanionSettings && (
+        <CompanionSelectModal
+          isFirstTime={false}
+          initialSelected={currentCompanion}
+          onSelect={async (c: CompanionStyle) => {
+            await setCompanionAction(c);
+            setCurrentCompanion(c);
+            setShowCompanionSettings(false);
+          }}
         />
       )}
     </div>

@@ -11,6 +11,7 @@ export interface ISession {
   messages?: Array<{ role: "user" | "assistant"; content: string }>; // Legacy - unencrypted
   encryptedMessages?: string | null; // New - encrypted blob of messages
   encryptedSummary?: string | null;  // New - encrypted summary
+  companion?: string | null;         // Which companion was active for this session
 }
 
 const MessageSchema = new Schema(
@@ -31,6 +32,7 @@ const SessionSchema = new Schema<ISession>({
   messages: { type: [MessageSchema], default: [] },   // Legacy
   encryptedMessages: { type: String, default: null }, // Encrypted messages blob
   encryptedSummary: { type: String, default: null },  // Encrypted summary
+  companion: { type: String, enum: ["lua", "leon", null], default: null },
 });
 
 SessionSchema.index({ userId: 1, sessionNumber: 1 }, { unique: true });

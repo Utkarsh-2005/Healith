@@ -8,6 +8,7 @@ interface Session {
   id: string;
   sessionNumber: number;
   summary?: string | null;
+  companion?: string | null;
 }
 
 interface MobileSidebarProps {

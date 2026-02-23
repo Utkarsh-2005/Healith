@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { getSessionChat, getSessionMeta, listSessions, sendMessage, endSession, deleteSession, getEncryptedSessionChat, saveEncryptedMessages, saveEncryptedSummary, saveEncryptedMemory, getEncryptedMemory, getTrailingSessionContext, type SessionListItem } from "../../actions";
+import { getSessionChat, getSessionMeta, listSessions, sendMessage, endSession, deleteSession, getEncryptedSessionChat, saveEncryptedMessages, saveEncryptedSummary, saveEncryptedMemory, getEncryptedMemory, getTrailingSessionContext, getCompanion, setCompanion as setCompanionAction, type SessionListItem } from "../../actions";
 import { useTheme } from "../../context/ThemeContext";
 import { useEncryption } from "../../context/EncryptionContext";
 import { encrypt, decrypt, decryptMessages, encryptMessages } from "@/lib/encryption";
@@ -12,6 +12,8 @@ import CrisisResourcesBanner from "../../components/CrisisResourcesBanner";
 import MarkdownRenderer from "../../components/MarkdownRenderer";
 import MeditationOfferModal from "../../components/MeditationOfferModal";
 import MobileSidebar from "../../components/MobileSidebar";
+import CompanionSelectModal from "../../components/CompanionSelectModal";
+import type { CompanionStyle } from "@/models/user";
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 type CrisisLevel = "none" | "concern" | "crisis";
@@ -24,7 +26,7 @@ export default function ChatSessionPage() {
   const { encryptionKey } = useEncryption();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [sessionMeta, setSessionMeta] = useState<{ sessionNumber: number; endedAt: string | null } | null>(null);
+  const [sessionMeta, setSessionMeta] = useState<{ sessionNumber: number; endedAt: string | null; companion: string | null } | null>(null);
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,9 +38,16 @@ export default function ChatSessionPage() {
   const [showMeditationModal, setShowMeditationModal] = useState(false);
   const [isEndingSession, setIsEndingSession] = useState(false);
   const [meditationReady, setMeditationReady] = useState(false);
+  const [showCompanionSettings, setShowCompanionSettings] = useState(false);
+  const [currentCompanion, setCurrentCompanion] = useState<CompanionStyle | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load companion on mount
+  useEffect(() => {
+    getCompanion().then(c => setCurrentCompanion(c)).catch(() => {});
+  }, []);
 
   // Load this session's chat messages
   useEffect(() => {
@@ -339,7 +348,7 @@ export default function ChatSessionPage() {
             sessionsLoading={sessionsLoading}
           />
           <div className={`text-xs font-sans tracking-widest uppercase opacity-70 ${theme.textMuted}`}>
-            Session {sessionMeta?.sessionNumber ? String(sessionMeta.sessionNumber).padStart(2, "0") : "--"}
+            Session {sessionMeta?.sessionNumber ? String(sessionMeta.sessionNumber).padStart(2, "0") : "--"} - {sessionMeta?.companion && ` ${sessionMeta.companion === "lua" ? "Lua" : "Leon"}`}
             {isEnded && <span className="ml-2">(Ended)</span>}
           </div>
         </div>
@@ -375,6 +384,16 @@ export default function ChatSessionPage() {
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
               </svg>
             )}
+          </button>
+          <button
+            onClick={() => setShowCompanionSettings(true)}
+            className={`p-2 rounded-full transition-all duration-500 hover:scale-110 ${isDarkMode ? "bg-[#1F3326] text-[#E8F3EE]" : "bg-[#EAF2EC] text-[#2F3E33]"} hover:cursor-pointer`}
+            title="Companion Settings"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
           </button>
             <button
               onClick={isEnded ? () => router.push("/") : handleEndSession}
@@ -510,7 +529,7 @@ export default function ChatSessionPage() {
         <div className="max-w-2xl mx-auto relative">
           {isEnded ? (
             <div className={`relative flex items-center justify-center p-4 backdrop-blur-sm border rounded-3xl shadow-sm transition-colors duration-500 ${theme.inputBg}`}>
-              <div className="text-sm opacity-80">This session has ended</div>
+              <span className="text-sm opacity-80">This session has ended</span>
             </div>
           ) : (
             <div className={`relative flex items-end gap-2 p-2 backdrop-blur-sm border rounded-3xl shadow-sm focus-within:ring-1 focus-within:ring-[#8CA394] transition-colors duration-500 ${theme.inputBg}`}>
@@ -555,6 +574,19 @@ export default function ChatSessionPage() {
           isProcessing={isEndingSession}
           onAccept={() => router.push(`/meditation/${sessionId}`)}
           onDecline={() => router.push("/")}
+        />
+      )}
+
+      {/* Companion Settings Modal */}
+      {showCompanionSettings && (
+        <CompanionSelectModal
+          isFirstTime={false}
+          initialSelected={currentCompanion}
+          onSelect={async (c: CompanionStyle) => {
+            await setCompanionAction(c);
+            setCurrentCompanion(c);
+            setShowCompanionSettings(false);
+          }}
         />
       )}
     </div>

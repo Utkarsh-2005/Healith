@@ -131,6 +131,7 @@ export default function SessionHistory({
                     endedAt: null,
                     intensityScore: null,
                     summary: null,
+                    companion: null,
                   });
                 }}
               >

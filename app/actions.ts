@@ -6,6 +6,7 @@ import { detectCrisis, getCrisisResponseAddendum } from "@/lib/crisis-detection"
 import { LongTermMemory } from "@/models/longTermMemory";
 import { Session } from "@/models/session";
 import { User } from "@/models/user";
+import type { CompanionStyle } from "@/models/user";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Types } from "mongoose";
 import { auth, currentUser } from "@clerk/nextjs/server";
@@ -159,6 +160,21 @@ export async function getAuthenticatedUser() {
   return user;
 }
 
+// ============================================
+// COMPANION STYLE ACTIONS
+// ============================================
+
+export async function getCompanion(): Promise<CompanionStyle | null> {
+  const user = await getAuthenticatedUser();
+  return user.companion || null;
+}
+
+export async function setCompanion(companion: CompanionStyle): Promise<void> {
+  const user = await getAuthenticatedUser();
+  user.companion = companion;
+  await user.save();
+}
+
 export async function deleteSession(sessionId: string): Promise<void> {
   await connectDB();
   await Session.deleteOne({ _id: sessionId });
@@ -177,13 +193,14 @@ export async function startSession() {
   
   const count = await Session.countDocuments({ userId: user._id });
   const sessionNumber = count + 1;
-  const sess = await Session.create({ userId: user._id, sessionNumber, startedAt: new Date() });
+  const companion = user.companion || null;
+  const sess = await Session.create({ userId: user._id, sessionNumber, startedAt: new Date(), companion });
   const firstName = user.name?.split(" ")[0] || "";
   const initialMessage = getInitialAssistantMessage(sessionNumber, firstName);
   // Persist the initial assistant message so it appears in history
   sess.messages = [{ role: "assistant", content: initialMessage }];
   await sess.save();
-  return { sessionId: sess._id.toString(), sessionNumber, initialMessage };
+  return { sessionId: sess._id.toString(), sessionNumber, initialMessage, companion };
 }
 
 function pickRandom<T>(arr: T[]): T {
@@ -238,7 +255,7 @@ export async function sendMessage(params: {
   if (!session) throw new Error("Session not found");
   
   // Get user's first name for personalisation
-  const user = await User.findById(session.userId).lean<{ name?: string } | null>();
+  const user = await User.findById(session.userId).lean<{ name?: string; companion?: string | null } | null>();
   const firstName = user?.name?.split(" ")[0] || "";
   
   // Detect crisis in the latest user message
@@ -252,6 +269,7 @@ export async function sendMessage(params: {
     clientTrailingSummaries: params.trailingSummaries,
     clientMemory: params.persistentMemory,
     userName: firstName,
+    companion: session.companion || user?.companion || null,
   });
   let text = await generateText(prompt);
   
@@ -416,6 +434,7 @@ export type SessionListItem = {
   endedAt: string | null;
   intensityScore: number | null;
   summary: string | null;
+  companion: string | null;
 };
 
 export async function listSessions(limit = 100): Promise<SessionListItem[]> {
@@ -430,7 +449,7 @@ export async function listSessions(limit = 100): Promise<SessionListItem[]> {
   })
     .sort({ sessionNumber: -1 })
     .limit(limit)
-    .lean<Array<{ _id: any; sessionNumber: number; startedAt: Date; endedAt?: Date | null; intensityScore?: number | null; summary?: string | null }>>();
+    .lean<Array<{ _id: any; sessionNumber: number; startedAt: Date; endedAt?: Date | null; intensityScore?: number | null; summary?: string | null; companion?: string | null }>>();
 
   return rows.map((r) => ({
     id: String(r._id),
@@ -439,6 +458,7 @@ export async function listSessions(limit = 100): Promise<SessionListItem[]> {
     endedAt: r.endedAt ? new Date(r.endedAt).toISOString() : null,
     intensityScore: r.intensityScore ?? null,
     summary: r.summary ?? null,
+    companion: r.companion ?? null,
   }));
 }
 
@@ -449,14 +469,21 @@ export async function getSessionChat(sessionId: string): Promise<ChatMessage[]> 
   return sess.messages.map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.content }));
 }
 
-export async function getSessionMeta(sessionId: string): Promise<{ sessionNumber: number; endedAt: string | null } | null> {
+export async function getSessionMeta(sessionId: string): Promise<{ sessionNumber: number; endedAt: string | null; companion: string | null } | null> {
   await connectDB();
-  const sess = await Session.findById(sessionId).lean<{ sessionNumber: number; endedAt?: Date | null } | null>();
+  const sess = await Session.findById(sessionId).lean<{ sessionNumber: number; endedAt?: Date | null; companion?: string | null } | null>();
   if (!sess) return null;
   return {
     sessionNumber: sess.sessionNumber,
     endedAt: sess.endedAt ? new Date(sess.endedAt).toISOString() : null,
+    companion: sess.companion ?? null,
   };
+}
+
+export async function reopenSession(sessionId: string): Promise<boolean> {
+  await connectDB();
+  const result = await Session.findByIdAndUpdate(sessionId, { $set: { endedAt: null } });
+  return !!result;
 }
 
 // Helper to safely extract JSON from model outputs that may include code fences or extra text

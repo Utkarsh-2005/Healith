@@ -150,7 +150,7 @@ export default function PassphraseModal({ onSuccess }: PinModalProps) {
     refs: React.MutableRefObject<(HTMLInputElement | null)[]>,
     target: "pin" | "confirm"
   ) => (
-    <div className="flex justify-center gap-3">
+    <div className="flex justify-center gap-1.5 xs:gap-2 sm:gap-3">
       {values.map((digit, i) => (
         <input
           key={i}
@@ -163,7 +163,7 @@ export default function PassphraseModal({ onSuccess }: PinModalProps) {
           onKeyDown={(e) => handleKeyDown(i, e, target)}
           onPaste={(e) => handlePaste(e, target)}
           disabled={isSubmitting}
-          className={`w-12 h-14 text-center text-2xl font-mono rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#2C5542]/50 ${
+          className={`w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-mono rounded-lg sm:rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#2C5542]/50 ${
             isDarkMode
               ? "bg-[#0f1a14] border-[#1F3326] text-[#E8F3EE] focus:border-[#3A614D]"
               : "bg-white border-[#D8E6DB] text-[#1A2E22] focus:border-[#2C5542]"
@@ -215,8 +215,8 @@ export default function PassphraseModal({ onSuccess }: PinModalProps) {
         {/* Warning for new setup */}
         {needsSetup && !isConfirming && (
           <div className={`mb-6 p-4 rounded-lg ${isDarkMode ? "bg-[#1a0f0a] border-[#3d2a1f]" : "bg-[#FFF8E6] border-[#E6D5A8]"} border`}>
-            <p className={`text-sm ${isDarkMode ? "text-[#E6C88A]" : "text-[#8B6914]"}`}>
-              <strong>Important:</strong> If you forget your PIN, your data cannot be recovered. There is no reset option.
+            <p className={`text-sm ${isDarkMode ? "text-[#e68a8a]" : "text-[#8b1414]"} text-center`}>
+              <strong>Important:</strong> If you forget your PIN, your data <strong>Cannot</strong> be recovered.<br></br> There is   <strong>No Reset Option!</strong>
             </p>
           </div>
         )}

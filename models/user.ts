@@ -1,5 +1,7 @@
 import { Schema, model, models } from "mongoose";
 
+export type CompanionStyle = "lua" | "leon";
+
 export interface IUser {
   _id: Schema.Types.ObjectId;
   clerkId: string;
@@ -9,6 +11,8 @@ export interface IUser {
   // Encryption fields
   encryptionSalt?: string;
   verificationHash?: string;
+  // Companion style
+  companion?: CompanionStyle | null;
 }
 
 const UserSchema = new Schema<IUser>(
@@ -20,6 +24,8 @@ const UserSchema = new Schema<IUser>(
     // Encryption fields - salt for key derivation, hash for passphrase verification
     encryptionSalt: { type: String, default: null },
     verificationHash: { type: String, default: null },
+    // Companion style
+    companion: { type: String, enum: ["lua", "leon", null], default: null },
   },
   { timestamps: false }
 );
